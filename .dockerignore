@@ -1,0 +1,41 @@
+
+```
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docs
+docs/
+examples/
+*.md
+
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# Misc
+.env
+.DS_Store
+```

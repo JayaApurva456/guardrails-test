@@ -1,0 +1,72 @@
+TEST EXAMPLE -1 
+
+$body = @{
+    code = "API_KEY = 'sk-123456789'`npassword = 'secret123'`neval(input())"
+    filename = "test.py"
+    language = "python"
+    copilot_detected = $false
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json"
+
+
+TEST EXAMPLE -2
+
+$body = @{
+    code = @"
+import os
+import pickle
+import subprocess
+import hashlib
+
+API_KEY = "sk-1234567890abcdefghijklmnopqrstuvwxyz"
+PASSWORD = "MySecretPassword123"
+
+def get_user(user_id):
+    query = f"SELECT * FROM users WHERE id = '{user_id}'"
+    return db.execute(query)
+
+def run_command(cmd):
+    os.system(cmd)
+
+def hash_password(pwd):
+    return hashlib.md5(pwd.encode()).hexdigest()
+
+def load_data(data):
+    return pickle.loads(data)
+
+def calculate(formula):
+    return eval(formula)
+"@
+    filename = "vulnerable-test.py"
+    language = "python"
+    copilot_detected = $true
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json" | ConvertTo-Json -Depth 5
+
+
+TEST EXAMPLE -3:
+
+$body = @{
+    code = "API_KEY = 'sk-123456789'`npassword = 'secret123'`neval(input())"
+    filename = "test.py"
+    language = "python"
+    copilot_detected = $true
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json"
+
+TEST EXAMPLE -4 :
+
+$body = @{
+    code = "const API_KEY = 'sk-123';`nfunction display(input) { document.getElementById('x').innerHTML = input; }`neval('console.log(1)');"
+    filename = "test.js"
+    language = "javascript"
+    copilot_detected = $false
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json"
+
+TEST EXAMPLE - 5:
+
