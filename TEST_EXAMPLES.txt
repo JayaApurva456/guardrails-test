@@ -1,72 +1,398 @@
-TEST EXAMPLE -1 
+#  MORE TEST EXAMPLES
 
-$body = @{
-    code = "API_KEY = 'sk-123456789'`npassword = 'secret123'`neval(input())"
-    filename = "test.py"
+Here are 10 different tests to show ALL your features working!
+
+---
+
+##  TEST EXAMPLE 1: Basic Secrets Detection
+
+**What it tests:** API keys and passwords
+
+```powershell
+$testCode = @{
+    code = "API_KEY = 'sk-1234567890abcdef'`nPASSWORD = 'MySecret123'`nAWS_KEY = 'AKIAIOSFODNN7EXAMPLE'"
+    filename = "secrets.py"
     language = "python"
-    copilot_detected = $false
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json"
+Write-Host "Test: Secrets Detection" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+```
 
+**Expected:** Should find 3 secrets (API_KEY, PASSWORD, AWS_KEY)
 
-TEST EXAMPLE -2
+---
 
-$body = @{
+##  TEST EXAMPLE 2: Code Duplication
+
+**What it tests:** Duplicate code blocks
+
+```powershell
+$testCode = @{
+    code = @"
+def process_data_a(items):
+    result = []
+    for item in items:
+        if item > 0:
+            result.append(item * 2)
+    return result
+
+def process_data_b(items):
+    result = []
+    for item in items:
+        if item > 0:
+            result.append(item * 2)
+    return result
+"@
+    filename = "duplicate.py"
+    language = "python"
+} | ConvertTo-Json
+
+Write-Host "Test: Duplication Detection" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+$result.violations | Where-Object {$_.type -like "*duplicate*"} | ForEach-Object {
+    Write-Host "  ✅ Duplication detected: $($_.message)" -ForegroundColor Green
+}
+```
+
+**Expected:** Should find duplicate code blocks (similarity ~95%)
+
+---
+
+##  TEST EXAMPLE 3: Coding Standards
+
+**What it tests:** Naming conventions, logging, error handling
+
+```powershell
+$testCode = @{
+    code = @"
+def myFunction():
+    userName = 'test'
+    MaxCount = 100
+    print('Debug message')
+    return userName
+
+class my_class:
+    pass
+
+def process():
+    try:
+        data = open('file.txt')
+    except:
+        pass
+"@
+    filename = "standards.py"
+    language = "python"
+} | ConvertTo-Json
+
+Write-Host "Test: Coding Standards" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+Write-Host "Violations:" -ForegroundColor Magenta
+$result.violations | ForEach-Object {
+    Write-Host "  - $($_.type): $($_.message)" -ForegroundColor Cyan
+}
+```
+
+**Expected:** Should find ~6 violations:
+- myFunction (camelCase)
+- userName (camelCase)
+- MaxCount (not SCREAMING_SNAKE_CASE)
+- print() usage
+- my_class (not PascalCase)
+- bare except clause
+
+---
+
+##  TEST EXAMPLE 4: SQL Injection
+
+**What it tests:** SQL injection vulnerabilities
+
+```powershell
+$testCode = @{
+    code = @"
+def get_user(user_id):
+    query = f`"SELECT * FROM users WHERE id = '{user_id}'`"
+    return db.execute(query)
+
+def login(username, password):
+    sql = `"SELECT * FROM users WHERE name='`" + username + `"' AND password='`" + password + `"'`"
+    return db.query(sql)
+"@
+    filename = "sql_injection.py"
+    language = "python"
+} | ConvertTo-Json
+
+Write-Host "Test: SQL Injection Detection" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+```
+
+**Expected:** Should find 2 SQL injection vulnerabilities
+
+---
+
+##  TEST EXAMPLE 5: Command Injection
+
+**What it tests:** Command injection vulnerabilities
+
+```powershell
+$testCode = @{
+    code = @"
+import os
+import subprocess
+
+def run_command(user_input):
+    os.system(user_input)
+
+def execute(cmd):
+    subprocess.call(cmd, shell=True)
+
+def run_script(filename):
+    os.popen(f'python {filename}')
+"@
+    filename = "command_injection.py"
+    language = "python"
+} | ConvertTo-Json
+
+Write-Host "Test: Command Injection Detection" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+```
+
+**Expected:** Should find 3 command injection vulnerabilities
+
+---
+
+##  TEST EXAMPLE 6: Weak Cryptography
+
+**What it tests:** Weak crypto algorithms
+
+```powershell
+$testCode = @{
+    code = @"
+import hashlib
+import pickle
+
+def hash_password(pwd):
+    return hashlib.md5(pwd.encode()).hexdigest()
+
+def hash_data(data):
+    return hashlib.sha1(data.encode()).hexdigest()
+
+def save_object(obj):
+    return pickle.dumps(obj)
+
+def load_object(data):
+    return pickle.loads(data)
+"@
+    filename = "weak_crypto.py"
+    language = "python"
+} | ConvertTo-Json
+
+Write-Host "Test: Weak Crypto Detection" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+```
+
+**Expected:** Should find 4 violations (MD5, SHA1, pickle usage)
+
+---
+
+##  TEST EXAMPLE 7: Eval/Exec Usage
+
+**What it tests:** Dangerous eval/exec functions
+
+```powershell
+$testCode = @{
+    code = @"
+def calculate(formula):
+    return eval(formula)
+
+def run_code(code):
+    exec(code)
+
+def parse_input(user_input):
+    result = eval(user_input)
+    return result
+"@
+    filename = "eval_usage.py"
+    language = "python"
+} | ConvertTo-Json
+
+Write-Host "Test: Eval/Exec Detection" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+```
+
+**Expected:** Should find 3 dangerous eval/exec usages
+
+---
+
+##  TEST EXAMPLE 8: JavaScript/TypeScript Test
+
+**What it tests:** JavaScript vulnerabilities
+
+```powershell
+$testCode = @{
+    code = @"
+var API_KEY = 'sk-test123456789';
+var password = 'MyPassword123';
+
+function getUserData(userId) {
+    var query = 'SELECT * FROM users WHERE id = ' + userId;
+    return db.query(query);
+}
+
+function myFunction() {
+    console.log('debug message');
+}
+"@
+    filename = "test.js"
+    language = "javascript"
+} | ConvertTo-Json
+
+Write-Host "Test: JavaScript Analysis" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+```
+
+**Expected:** Should find secrets, SQL injection, var usage, console.log
+
+---
+
+##  TEST EXAMPLE 9: COMPLETE TEST (Everything!)
+
+**What it tests:** ALL features at once
+
+```powershell
+$testCode = @{
     code = @"
 import os
 import pickle
-import subprocess
 import hashlib
 
-API_KEY = "sk-1234567890abcdefghijklmnopqrstuvwxyz"
-PASSWORD = "MySecretPassword123"
+# Secrets
+API_KEY = 'sk-1234567890abcdefghijklmnopqrstuvwxyz'
+PASSWORD = 'MySecretPassword123'
 
+# SQL Injection
 def get_user(user_id):
-    query = f"SELECT * FROM users WHERE id = '{user_id}'"
+    query = f`"SELECT * FROM users WHERE id = '{user_id}'`"
     return db.execute(query)
 
+# Command Injection
 def run_command(cmd):
     os.system(cmd)
+
+# Weak Crypto
+def hash_password(pwd):
+    return hashlib.md5(pwd.encode()).hexdigest()
+
+# Eval
+def calculate(formula):
+    return eval(formula)
+
+# Naming Violations
+def myFunction():
+    MyVariable = 10
+    print('debug')
+    return MyVariable
+
+# Duplication
+def process_a(data):
+    result = []
+    for item in data:
+        if item > 0:
+            result.append(item * 2)
+    return result
+
+def process_b(data):
+    result = []
+    for item in data:
+        if item > 0:
+            result.append(item * 2)
+    return result
+"@
+    filename = "complete_test.py"
+    language = "python"
+    copilot_detected = $true
+} | ConvertTo-Json
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "  COMPLETE FEATURE TEST" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
+Write-Host ""
+
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
+
+Write-Host "Total Violations: $($result.total_count)" -ForegroundColor Yellow
+Write-Host "Duration: $($result.duration) seconds" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "By Severity:" -ForegroundColor Magenta
+Write-Host "  🔴 Critical: $($result.by_severity.critical)" -ForegroundColor Red
+Write-Host "  🟠 High: $($result.by_severity.high)" -ForegroundColor Yellow
+Write-Host "  🟡 Medium: $($result.by_severity.medium)" -ForegroundColor Yellow
+Write-Host "  🟢 Low: $($result.by_severity.low)" -ForegroundColor Green
+Write-Host ""
+Write-Host "By Source:" -ForegroundColor Magenta
+$result.by_source.PSObject.Properties | ForEach-Object {
+    Write-Host "  📍 $($_.Name): $($_.Value)" -ForegroundColor Cyan
+}
+Write-Host ""
+Write-Host "Policy:" -ForegroundColor Magenta
+Write-Host "  Block: $($result.policy_action.should_block)" -ForegroundColor Red
+Write-Host "  Reason: $($result.policy_action.reason)" -ForegroundColor White
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Green
+```
+
+**Expected:** Should find 15-25 violations from multiple sources!
+
+---
+
+##  TEST EXAMPLE 10: Copilot Scrutiny Test
+
+**What it tests:** Stricter checks for AI-generated code
+
+```powershell
+$testCode = @{
+    code = @"
+import hashlib
+import pickle
 
 def hash_password(pwd):
     return hashlib.md5(pwd.encode()).hexdigest()
 
 def load_data(data):
     return pickle.loads(data)
-
-def calculate(formula):
-    return eval(formula)
 "@
-    filename = "vulnerable-test.py"
+    filename = "copilot_test.py"
     language = "python"
     copilot_detected = $true
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json" | ConvertTo-Json -Depth 5
+Write-Host "Test: Copilot Scrutiny (Stricter for AI code)" -ForegroundColor Cyan
+$result = Invoke-RestMethod -Uri "https://guardrails-test-3.onrender.com/api/analyze/file" -Method Post -Body $testCode -ContentType "application/json"
 
+Write-Host "Found $($result.total_count) violations" -ForegroundColor Yellow
+Write-Host "Copilot Detected: $($result.copilot_detected)" -ForegroundColor Magenta
 
-TEST EXAMPLE -3:
+# Check for severity upgrades
+$upgraded = $result.violations | Where-Object {$_.copilot_adjusted -eq $true}
+if ($upgraded) {
+    Write-Host ""
+    Write-Host "Severity Upgraded for AI Code:" -ForegroundColor Red
+    $upgraded | ForEach-Object {
+        Write-Host "  ⬆️  $($_.type): $($_.message)" -ForegroundColor Yellow
+    }
+}
+```
 
-$body = @{
-    code = "API_KEY = 'sk-123456789'`npassword = 'secret123'`neval(input())"
-    filename = "test.py"
-    language = "python"
-    copilot_detected = $true
-} | ConvertTo-Json
+**Expected:** Should show severity upgrades for AI-generated code
 
-Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json"
-
-TEST EXAMPLE -4 :
-
-$body = @{
-    code = "const API_KEY = 'sk-123';`nfunction display(input) { document.getElementById('x').innerHTML = input; }`neval('console.log(1)');"
-    filename = "test.js"
-    language = "javascript"
-    copilot_detected = $false
-} | ConvertTo-Json
-
-Invoke-RestMethod -Uri "https://guardrails-test-2.onrender.com/api/analyze/file" -Method Post -Body $body -ContentType "application/json"
-
-TEST EXAMPLE - 5:
+---
 
