@@ -1,0 +1,151 @@
+# Telecommunications Rule Pack
+# Telecom Industry Data Protection Rules
+
+name: "Telecommunications"
+description: "Telecom industry rules for subscriber data protection (CPNI compliance)"
+version: "1.0.0"
+compliance_framework: "CPNI / GDPR / Telecom Regulations / 47 CFR 64.2000"
+enabled: true
+
+rules:
+  TEL001:
+    name: "Telecom: Subscriber Data in Logs"
+    description: "IMEI, IMSI, MSISDN, phone numbers require protection (CPNI)"
+    severity: high
+    category: security
+    cwe: "CWE-532"
+    cpni: true
+    patterns:
+      - '(?i)(?:print|log|console|logger)\s*\([^)]*(?:phone|mobile|imei|imsi|msisdn)'
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:subscriber|caller|callee)'
+      - '(?i)log.*(?:\+?[1-9]\d{1,14}|\d{10,15})'
+    fix: "Mask subscriber identifiers in logs. Log only last 4 digits: ***-***-1234"
+    references:
+      - "https://www.fcc.gov/general/customer-proprietary-network-information-cpni"
+
+  TEL002:
+    name: "Telecom: CDR Exposure"
+    description: "Call Detail Records must be protected (CPNI)"
+    severity: high
+    category: security
+    cwe: "CWE-359"
+    cpni: true
+    patterns:
+      - '(?i)(?:cdr|call_record|call_detail).*(?:public|expose|api)(?!.*auth)'
+      - '(?i)SELECT.*FROM.*cdr(?!.*WHERE.*auth)'
+    fix: "CDRs require strong authentication and authorization. Implement access controls"
+
+  TEL003:
+    name: "Telecom: Location Data Privacy"
+    description: "Subscriber location is highly sensitive (CPNI + GDPR)"
+    severity: critical
+    category: security
+    cwe: "CWE-201"
+    cpni: true
+    gdpr: true
+    patterns:
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:location|gps|latitude|longitude|coordinates)'
+      - '(?i)(?:cell_tower|cell_id|lac|mcc|mnc).*(?:log|print|console)'
+      - '(?i)geo[_-]?location.*(?:log|expose|api)(?!.*consent)'
+    fix: "Never log precise location. Use cell sector anonymization. Require explicit consent"
+
+  TEL004:
+    name: "Telecom: Number Portability Data"
+    description: "MNP data must be handled securely"
+    severity: medium
+    category: security
+    cpni: true
+    patterns:
+      - '(?i)(?:mnp|porting|portability|donor|recipient).*(?:public|expose|log)'
+      - '(?i)number.*portability.*(?:api|endpoint)(?!.*auth)'
+    fix: "MNP data requires secure handling and access controls. Not for public APIs"
+
+  TEL005:
+    name: "Telecom: SIM Cryptographic Data"
+    description: "SIM authentication data is critical infrastructure"
+    severity: critical
+    category: security
+    cwe: "CWE-798"
+    patterns:
+      - '(?i)(?:ki|iccid|imsi|sim_key|k_key|opc).*[=:]'
+      - '(?i)(?:print|log).*(?:ki|authentication_key)'
+      - '(?i)INSERT.*INTO.*sim.*VALUES.*[0-9a-fA-F]{32}'
+    fix: "SIM crypto data must never be logged or exposed. Use HSM for key storage"
+
+  TEL006:
+    name: "Telecom: Lawful Intercept Security"
+    description: "LI systems must be properly secured (CALEA compliance)"
+    severity: critical
+    category: security
+    calea: true
+    patterns:
+      - '(?i)lawful.*intercept.*(?:public|expose|log|api)'
+      - '(?i)li_.*(?:credentials|password|key|config)'
+      - '(?i)calea.*(?:log|print)'
+    fix: "LI systems require maximum security controls. Air-gap from production. No logging"
+
+  TEL007:
+    name: "Telecom: Billing Data Protection"
+    description: "Billing records contain sensitive subscriber data"
+    severity: high
+    category: security
+    cwe: "CWE-359"
+    cpni: true
+    patterns:
+      - '(?i)billing.*(?:amount|charge|balance).*(?:log|print|console)'
+      - '(?i)(?:invoice|bill|charge).*(?:public|api)(?!.*auth)'
+    fix: "Protect billing data with encryption and access controls"
+
+  TEL008:
+    name: "Telecom: VoIP Security"
+    description: "VoIP systems require strong security"
+    severity: high
+    category: security
+    cwe: "CWE-306"
+    patterns:
+      - '(?i)sip.*(?:register|invite)(?!.*(?:auth|digest))'
+      - '(?i)voip.*(?:call|session)(?!.*(?:encrypt|srtp))'
+      - '(?i)port.*5060(?!.*tls)'
+    fix: "Implement SIP authentication, use SRTP for media, and TLS for signaling"
+
+  TEL009:
+    name: "Telecom: SS7 Security"
+    description: "SS7/Diameter interfaces must be secured"
+    severity: critical
+    category: security
+    patterns:
+      - '(?i)ss7.*(?:connect|send|receive)(?!.*(?:filter|firewall))'
+      - '(?i)diameter.*(?:routing|message)(?!.*(?:validate|filter))'
+    fix: "Implement SS7 firewall, message filtering, and anomaly detection"
+
+  TEL010:
+    name: "Telecom: Subscriber Consent"
+    description: "Subscriber data usage requires consent (GDPR/CCPA)"
+    severity: high
+    category: security
+    gdpr: true
+    ccpa: true
+    patterns:
+      - '(?i)(?:subscriber|customer).*data.*(?:share|sell|transfer)(?!.*consent)'
+      - '(?i)third[_-]?party.*(?:api|share).*subscriber(?!.*permission)'
+    fix: "Obtain explicit subscriber consent before sharing data with third parties"
+
+  TEL011:
+    name: "Telecom: Network Slice Isolation"
+    description: "5G network slices must be isolated"
+    severity: high
+    category: security
+    cwe: "CWE-653"
+    patterns:
+      - '(?i)network.*slice(?!.*(?:isolat|segregat))'
+      - '(?i)5g.*slice.*(?:share|common)(?!.*security)'
+    fix: "Implement proper isolation between network slices. Use separate VLANs/VPNs"
+
+  TEL012:
+    name: "Telecom: IMSI Catcher Detection"
+    description: "Detect and log potential IMSI catchers"
+    severity: medium
+    category: security
+    patterns:
+      - '(?i)cell.*(?:tower|station).*(?:unknown|unverified)(?!.*(?:log|alert))'
+    fix: "Implement IMSI catcher detection and alerting mechanisms"

@@ -1,0 +1,114 @@
+# Telecommunications Rule Pack
+# Telecom Industry Data Protection Rules
+
+name: "Telecommunications"
+description: "Telecom industry rules for subscriber data protection"
+version: "1.0.0"
+compliance_framework: "CPNI / GDPR / Telecom Regulations"
+enabled: true
+
+rules:
+  TEL001:
+    name: "Telecom: Subscriber Data in Logs"
+    description: "IMEI, IMSI, phone numbers require protection"
+    severity: high
+    category: security
+    cpni: true
+    patterns:
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:phone|mobile|imei|imsi|msisdn)'
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:subscriber|caller|callee)'
+    fix: "Mask subscriber identifiers in logs"
+    references:
+      - "https://www.fcc.gov/general/customer-proprietary-network-information-cpni"
+
+  TEL002:
+    name: "Telecom: CDR Exposure"
+    description: "Call Detail Records must be protected"
+    severity: high
+    category: security
+    cpni: true
+    patterns:
+      - '(?i)(?:cdr|call_record|call_detail).*(?:public|expose|api)'
+    fix: "CDRs require authentication and authorization"
+
+  TEL003:
+    name: "Telecom: Location Data"
+    description: "Subscriber location is highly sensitive"
+    severity: critical
+    category: security
+    cpni: true
+    patterns:
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:location|gps|lat|lng|coordinates)'
+      - '(?i)(?:cell_tower|cell_id|lac).*(?:log|print)'
+    fix: "Never log precise location. Use anonymization"
+
+  TEL004:
+    name: "Telecom: Number Portability"
+    description: "MNP data must be handled securely"
+    severity: medium
+    category: security
+    patterns:
+      - '(?i)(?:mnp|porting|portability).*(?:public|expose)'
+    fix: "MNP data requires secure handling"
+
+  TEL005:
+    name: "Telecom: SIM Data"
+    description: "SIM cryptographic data is critical"
+    severity: critical
+    category: security
+    patterns:
+      - '(?i)(?:ki|iccid|sim_key).*[=:]'
+      - '(?i)(?:print|log).*(?:ki|iccid)'
+    fix: "SIM crypto data must never be exposed"
+
+  TEL006:
+    name: "Telecom: Lawful Intercept"
+    description: "LI systems must be properly secured"
+    severity: critical
+    category: security
+    patterns:
+      - '(?i)lawful.*intercept.*(?:public|expose|log)'
+      - '(?i)li_.*(?:credentials|password|key)'
+    fix: "LI systems require maximum security controls"
+
+  TEL007:
+    name: "Telecom: Billing Data"
+    description: "Billing information requires protection"
+    severity: high
+    category: security
+    cpni: true
+    patterns:
+      - '(?i)(?:print|log).*(?:billing|charge|invoice)'
+      - '(?i)billing.*(?:public|expose)'
+    fix: "Protect billing data with encryption and access controls"
+
+  TEL008:
+    name: "Telecom: Network Credentials"
+    description: "Network element credentials must be secured"
+    severity: critical
+    category: security
+    patterns:
+      - '(?i)(?:msc|hlr|mgw|sgsn|ggsn).*(?:password|key)\s*[=:]'
+      - '(?i)(?:print|log).*(?:network|ne).*(?:password|credential)'
+    fix: "Store network credentials in secure vault"
+
+  TEL009:
+    name: "Telecom: A-Key Protection"
+    description: "Authentication keys (A-Key) are critical"
+    severity: critical
+    category: security
+    patterns:
+      - '(?i)(?:a_key|akey|auth_key)\s*[=:]\s*["\'][^"\']+["\']'
+      - '(?i)(?:print|log).*(?:a_key|akey)'
+    fix: "A-Keys must never be logged or hardcoded"
+
+  TEL010:
+    name: "Telecom: Roaming Data"
+    description: "Roaming and visitor location data is sensitive"
+    severity: high
+    category: security
+    cpni: true
+    patterns:
+      - '(?i)(?:print|log).*(?:roaming|vlr|visitor_location)'
+      - '(?i)(?:vlr|hlr|roaming).*(?:public|api)'
+    fix: "Protect roaming data with proper access controls"

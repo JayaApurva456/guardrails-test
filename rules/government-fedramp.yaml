@@ -1,0 +1,144 @@
+# Government Rule Pack
+# FedRAMP/FISMA Compliance Rules
+
+name: "Government (FedRAMP)"
+description: "Federal security requirements for FedRAMP/FISMA compliance"
+version: "1.0.0"
+compliance_framework: "FedRAMP Moderate / NIST 800-53 Rev 5"
+enabled: true
+
+rules:
+  GOV001:
+    name: "FedRAMP: FIPS Cryptography Required"
+    description: "Must use FIPS 140-2/140-3 validated cryptography"
+    severity: high
+    category: security
+    cwe: "CWE-327"
+    nist: ["SC-13"]
+    fedramp: "High"
+    patterns:
+      - '(?i)(?:MD5|SHA1|SHA-1)(?!.*deprecated)'
+      - '(?i)hashlib\.(?:md5|sha1)\s*\('
+      - '(?i)(?:DES|3DES|RC4|Blowfish)(?!.*legacy)'
+    fix: "Use FIPS-validated algorithms: SHA-256/SHA-512, AES-256, RSA-2048+"
+    references:
+      - "https://csrc.nist.gov/projects/cryptographic-module-validation-program"
+
+  GOV002:
+    name: "FedRAMP: Session Timeout"
+    description: "Sessions must timeout after 15 minutes of inactivity"
+    severity: medium
+    category: security
+    cwe: "CWE-613"
+    nist: ["AC-11", "AC-12"]
+    fedramp: "Moderate"
+    patterns:
+      - '(?i)session.*(?:timeout|expire|max[_-]?age).*(?:3600|7200|86400)'
+      - '(?i)(?:timeout|expire).*[=:]\s*(?:[3-9]\d{3}|\d{5,})'
+      - '(?i)max[_-]?age.*[=:]\s*(?:[2-9]\d{3}|\d{5,})'
+    fix: "Set session timeout to 900 seconds (15 minutes) maximum for FedRAMP Moderate"
+
+  GOV003:
+    name: "FedRAMP: Password Complexity"
+    description: "Passwords must meet federal complexity requirements"
+    severity: medium
+    category: security
+    cwe: "CWE-521"
+    nist: ["IA-5"]
+    fedramp: "Moderate"
+    patterns:
+      - '(?i)password.*(?:min|minimum).*length.*[1-7](?!\d)'
+      - '(?i)(?:minlength|min_length).*[=:]\s*[1-9](?!\d)'
+      - '(?i)password.*complexity.*false'
+    fix: "Require minimum 12 characters with uppercase, lowercase, numbers, and special chars"
+
+  GOV004:
+    name: "FedRAMP: Audit Logging"
+    description: "Security-relevant events must be logged"
+    severity: medium
+    category: security
+    cwe: "CWE-778"
+    nist: ["AU-2", "AU-3", "AU-12"]
+    fedramp: "Moderate"
+    patterns:
+      - '(?i)(?:login|logout|authentication|authorization)(?!.*(?:log|audit))'
+      - '(?i)def\s+(?:login|authenticate)(?!.*log)'
+    fix: "Log all authentication events with: user, timestamp, source IP, and result"
+
+  GOV005:
+    name: "FedRAMP: TLS Version"
+    description: "Must use TLS 1.2 or 1.3 only"
+    severity: high
+    category: security
+    cwe: "CWE-326"
+    nist: ["SC-8"]
+    fedramp: "High"
+    patterns:
+      - '(?i)ssl.*version.*[12]\.'
+      - '(?i)tls.*(?:1\.0|1\.1)'
+      - '(?i)(?:SSLv2|SSLv3|TLSv1\.0|TLSv1\.1)'
+      - '(?i)PROTOCOL_(?:SSLv|TLSv1)(?!.*1_[23])'
+    fix: "Use TLS 1.2 minimum (TLS 1.3 preferred). Disable TLS 1.0/1.1 and all SSL versions"
+
+  GOV006:
+    name: "FedRAMP: Multi-Factor Authentication"
+    description: "Privileged access requires multi-factor authentication"
+    severity: high
+    category: security
+    cwe: "CWE-306"
+    nist: ["IA-2(1)", "IA-2(2)"]
+    fedramp: "High"
+    patterns:
+      - '(?i)(?:admin|superuser|root).*login(?!.*(?:mfa|2fa|totp|yubikey))'
+      - '(?i)privileged.*access(?!.*(?:mfa|multi[_-]?factor))'
+    fix: "Implement MFA for all privileged accounts (TOTP, hardware tokens, or biometric)"
+
+  GOV007:
+    name: "FedRAMP: Account Lockout"
+    description: "Implement account lockout after failed login attempts"
+    severity: medium
+    category: security
+    cwe: "CWE-307"
+    nist: ["AC-7"]
+    fedramp: "Moderate"
+    patterns:
+      - '(?i)login.*attempts(?!.*(?:lock|disable|limit))'
+      - '(?i)failed.*login(?!.*(?:lockout|threshold))'
+    fix: "Lock accounts after 3-5 failed attempts within 15 minutes. Notify administrators"
+
+  GOV008:
+    name: "FedRAMP: Data at Rest Encryption"
+    description: "Government data must be encrypted at rest"
+    severity: high
+    category: security
+    cwe: "CWE-311"
+    nist: ["SC-28"]
+    fedramp: "High"
+    patterns:
+      - '(?i)(?:db|database|storage).*(?:save|write|store)(?!.*encrypt)'
+      - '(?i)open\s*\([^)]*["\']w.*(?:sensitive|classified|cui)'
+    fix: "Encrypt all sensitive government data at rest using FIPS-validated AES-256"
+
+  GOV009:
+    name: "FedRAMP: Security Headers"
+    description: "Web applications require security headers"
+    severity: medium
+    category: security
+    cwe: "CWE-693"
+    nist: ["SC-8", "SC-23"]
+    fedramp: "Moderate"
+    patterns:
+      - '(?i)response(?!.*(X-Frame-Options|X-Content-Type-Options|Strict-Transport))'
+      - '(?i)flask.*response(?!.*header)'
+    fix: "Implement security headers: HSTS, X-Frame-Options, CSP, X-Content-Type-Options"
+
+  GOV010:
+    name: "FedRAMP: Vulnerability Scanning"
+    description: "Code must be scanned for vulnerabilities"
+    severity: medium
+    category: security
+    nist: ["RA-5"]
+    fedramp: "Moderate"
+    patterns:
+      - '(?i)dependencies.*(?!.*scan|audit|check)'
+    fix: "Implement automated vulnerability scanning (monthly minimum, weekly recommended)"

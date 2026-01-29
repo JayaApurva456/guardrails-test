@@ -1,0 +1,200 @@
+# Copilot Guardrails - Security Rules Configuration
+# This file defines all security rules in YAML format
+
+version: "1.0.0"
+schema: "guardrails-rules-v1"
+
+# Global settings
+settings:
+  default_severity: medium
+  default_category: security
+  enabled: true
+  strict_mode_for_ai: true
+
+# =============================================================================
+# SECURITY RULES (OWASP Top 10 + CWE mapped)
+# =============================================================================
+security_rules:
+  SEC001:
+    name: "Hardcoded Secret"
+    description: "Hardcoded credential, API key, or secret detected"
+    severity: critical
+    cwe: "CWE-798"
+    owasp: "A07:2021"
+    patterns:
+      - '(?i)(api[_-]?key|apikey)\s*[=:]\s*["\'][A-Za-z0-9_\-]{16,}["\']'
+      - '(?i)(secret[_-]?key|password|passwd)\s*[=:]\s*["\'][^"'']{4,}["\']'
+      - 'sk-[A-Za-z0-9]{32,}'
+      - 'ghp_[A-Za-z0-9]{36}'
+      - 'AKIA[0-9A-Z]{16}'
+      - '-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----'
+    fix: "Use environment variables or a secrets manager"
+    references:
+      - "https://cwe.mitre.org/data/definitions/798.html"
+      - "https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/"
+
+  SEC002:
+    name: "SQL Injection"
+    description: "User input concatenated into SQL query"
+    severity: critical
+    cwe: "CWE-89"
+    owasp: "A03:2021"
+    patterns:
+      - 'f["\']SELECT\s+.{0,50}\{'
+      - 'f["\']INSERT\s+INTO\s+.{0,50}\{'
+      - 'f["\']UPDATE\s+.{0,50}\{'
+      - '["\']SELECT\s+.{0,50}\s*\+\s*'
+    fix: "Use parameterized queries: cursor.execute('SELECT * FROM users WHERE id = ?', (id,))"
+
+  SEC003:
+    name: "Command Injection"
+    description: "User input in system command execution"
+    severity: critical
+    cwe: "CWE-78"
+    owasp: "A03:2021"
+    patterns:
+      - 'os\.system\s*\(\s*f["\']'
+      - 'subprocess\.(?:call|run|Popen)\s*\([^)]*shell\s*=\s*True'
+      - 'eval\s*\(\s*(?:request|input|argv)'
+    fix: "Use subprocess with list arguments, never shell=True"
+
+  SEC004:
+    name: "Insecure Deserialization"
+    description: "Unsafe deserialization can lead to RCE"
+    severity: high
+    cwe: "CWE-502"
+    owasp: "A08:2021"
+    patterns:
+      - 'pickle\.loads?\s*\('
+      - 'yaml\.load\s*\([^)]*\)(?!\s*,?\s*Loader)'
+      - 'marshal\.loads?\s*\('
+    fix: "Use json.loads() or yaml.safe_load()"
+
+  SEC005:
+    name: "Path Traversal"
+    description: "Arbitrary file access vulnerability"
+    severity: high
+    cwe: "CWE-22"
+    owasp: "A01:2021"
+    patterns:
+      - 'open\s*\(\s*f["\']'
+      - '\.\./\.\.'
+    fix: "Validate paths and use allowlists"
+
+  SEC006:
+    name: "Weak Cryptography"
+    description: "Weak or deprecated cryptographic algorithm"
+    severity: medium
+    cwe: "CWE-327"
+    owasp: "A02:2021"
+    patterns:
+      - 'hashlib\.md5\s*\('
+      - 'hashlib\.sha1\s*\('
+      - 'DES\.new\s*\('
+    fix: "Use SHA-256+ for hashing, AES-256 for encryption"
+
+  SEC007:
+    name: "XSS Vulnerability"
+    description: "Cross-site scripting vulnerability"
+    severity: high
+    cwe: "CWE-79"
+    owasp: "A03:2021"
+    patterns:
+      - 'innerHTML\s*='
+      - 'document\.write\s*\('
+      - 'dangerouslySetInnerHTML'
+    fix: "Use textContent, sanitize with DOMPurify"
+
+  SEC008:
+    name: "Insecure Random"
+    description: "Cryptographically insecure random"
+    severity: medium
+    cwe: "CWE-330"
+    owasp: "A02:2021"
+    patterns:
+      - 'random\.random\s*\('
+      - 'Math\.random\s*\('
+    fix: "Use secrets module or crypto.getRandomValues()"
+
+  SEC009:
+    name: "SSRF Risk"
+    description: "Server-side request forgery risk"
+    severity: high
+    cwe: "CWE-918"
+    owasp: "A10:2021"
+    patterns:
+      - 'requests\.(?:get|post)\s*\([^)]*(?:request\.|input|user)'
+    fix: "Validate URLs and use domain allowlists"
+
+# =============================================================================
+# LICENSE RULES
+# =============================================================================
+license_rules:
+  LIC001:
+    name: "GPL License"
+    description: "GPL may require open-sourcing derivative works"
+    severity: high
+    patterns:
+      - 'GNU\s+GENERAL\s+PUBLIC\s+LICENSE'
+      - 'GPL-[23]\.0'
+    copyleft: true
+    commercial: false
+
+  LIC002:
+    name: "AGPL License"
+    description: "AGPL requires source disclosure for network services"
+    severity: critical
+    patterns:
+      - 'GNU\s+AFFERO\s+GENERAL\s+PUBLIC'
+      - 'AGPL-3\.0'
+    copyleft: true
+    commercial: false
+
+  LIC003:
+    name: "Proprietary License"
+    description: "Proprietary or restrictive license"
+    severity: medium
+    patterns:
+      - 'All\s+rights\s+reserved'
+      - 'PROPRIETARY'
+    copyleft: false
+    commercial: false
+
+# =============================================================================
+# ENTERPRISE STANDARDS
+# =============================================================================
+standards_rules:
+  STD001:
+    name: "Console Logging"
+    description: "Use proper logging framework"
+    severity: low
+    patterns:
+      - '\bconsole\.(log|debug|info)\s*\('
+      - '\bprint\s*\([^)]+\)'
+    fix: "Use logging framework"
+
+  STD002:
+    name: "TODO Comment"
+    description: "Unresolved TODO indicates incomplete code"
+    severity: info
+    patterns:
+      - '#\s*(TODO|FIXME|HACK)[\s:]+'
+    fix: "Address TODO or create tracking ticket"
+
+  STD003:
+    name: "Debug Code"
+    description: "Debug code in production"
+    severity: medium
+    patterns:
+      - '\bdebugger\b'
+      - '\bbreakpoint\s*\(\s*\)'
+    fix: "Remove debug code"
+
+  STD004:
+    name: "Bare Except"
+    description: "Catching all exceptions hides bugs"
+    severity: medium
+    patterns:
+      - 'except\s*:'
+      - 'except\s+Exception\s*:'
+    fix: "Catch specific exceptions"

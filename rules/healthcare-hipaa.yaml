@@ -1,0 +1,133 @@
+# Healthcare Rule Pack
+# HIPAA Compliance Rules for Protected Health Information
+
+name: "Healthcare (HIPAA)"
+description: "HIPAA Security Rule compliance for PHI protection"
+version: "1.0.0"
+compliance_framework: "HIPAA Security Rule"
+enabled: true
+
+rules:
+  HIPAA001:
+    name: "HIPAA: PHI in Logs"
+    description: "Protected Health Information must not be logged"
+    severity: critical
+    category: security
+    cwe: "CWE-532"
+    hipaa: ["164.312(b)"]
+    patterns:
+      - '(?i)(?:print|log|console|logger)\s*\([^)]*(?:patient|diagnosis|medical|health_record)'
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:ssn|social_security)'
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:dob|date_of_birth|birth_date)'
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:mrn|medical_record_number)'
+      - '(?i)log.*(?:patient_id|patient_name|diagnosis_code)'
+    fix: "Never log PHI. Use tokenization or de-identification for debugging"
+    references:
+      - "https://www.hhs.gov/hipaa/for-professionals/security/index.html"
+
+  HIPAA002:
+    name: "HIPAA: Unencrypted PHI Storage"
+    description: "PHI must be encrypted at rest (AES-256)"
+    severity: critical
+    category: security
+    cwe: "CWE-311"
+    hipaa: ["164.312(a)(2)(iv)"]
+    patterns:
+      - '(?i)(?:save|write|store|insert).*(?:patient|diagnosis|medical|health)[^)]*\)(?!.*encrypt)'
+      - '(?i)open\s*\([^)]*(?:patient|medical|health).*["\']w'
+      - '(?i)db\.(?:save|insert).*(?:patient|medical)(?!.*encrypt)'
+    fix: "Encrypt all PHI at rest using AES-256-GCM. Use field-level encryption for sensitive data"
+
+  HIPAA003:
+    name: "HIPAA: PHI in URLs"
+    description: "PHI must not be in URL parameters (can be logged)"
+    severity: high
+    category: security
+    cwe: "CWE-598"
+    hipaa: ["164.312(e)(1)"]
+    patterns:
+      - '(?i)\?.*(?:patient|ssn|diagnosis|medical|dob)='
+      - '(?i)url.*\+.*(?:patient|ssn|medical|health_record)'
+      - '(?i)GET.*(?:patient_id|medical_record)'
+    fix: "Use POST body or encrypted parameters for PHI. Never in query strings"
+
+  HIPAA004:
+    name: "HIPAA: Missing Access Control"
+    description: "PHI access must be authenticated and authorized"
+    severity: high
+    category: security
+    cwe: "CWE-306"
+    hipaa: ["164.312(d)", "164.312(a)(1)"]
+    patterns:
+      - '(?i)def\s+(?:get|fetch|retrieve)_patient\s*\([^)]*\)(?!.*(?:auth|token|verify|@login))'
+      - '(?i)SELECT.*FROM.*(?:patient|medical)(?!.*WHERE.*user)'
+    fix: "Implement role-based access control (RBAC). Verify authentication before PHI access"
+
+  HIPAA005:
+    name: "HIPAA: Audit Logging Required"
+    description: "All PHI access must be logged for audit"
+    severity: medium
+    category: security
+    cwe: "CWE-778"
+    hipaa: ["164.312(b)", "164.308(a)(1)(ii)(D)"]
+    patterns:
+      - '(?i)(?:patient|medical|health).*(?:read|write|update|delete)(?!.*(?:audit|log))'
+      - '(?i)def\s+(?:get|update)_patient(?!.*log)'
+    fix: "Log all PHI access with: user_id, timestamp, action, resource, and result"
+
+  HIPAA006:
+    name: "HIPAA: PHI in Error Messages"
+    description: "Error messages must not expose PHI"
+    severity: high
+    category: security
+    cwe: "CWE-209"
+    hipaa: ["164.312(e)(2)"]
+    patterns:
+      - '(?i)(?:raise|throw|error).*(?:patient|ssn|diagnosis|medical_record)'
+      - '(?i)except.*:.*print.*(?:patient|medical)'
+    fix: "Sanitize error messages. Log full errors securely, show generic messages to users"
+
+  HIPAA007:
+    name: "HIPAA: Unencrypted Transmission"
+    description: "PHI must be encrypted in transit (TLS 1.2+)"
+    severity: critical
+    category: security
+    cwe: "CWE-319"
+    hipaa: ["164.312(e)(1)", "164.312(e)(2)(i)"]
+    patterns:
+      - 'http://(?!localhost).*(?:patient|medical|health|phi)'
+      - '(?i)url.*["\']http://.*(?:patient|medical)'
+    fix: "Use HTTPS with TLS 1.2+ for all PHI transmission. Enable HSTS"
+
+  HIPAA008:
+    name: "HIPAA: Missing Data Minimization"
+    description: "Only collect minimum necessary PHI"
+    severity: medium
+    category: security
+    hipaa: ["164.502(b)", "164.514(d)"]
+    patterns:
+      - '(?i)SELECT\s+\*\s+FROM.*(?:patient|medical)'
+      - '(?i)patient\.(?:ssn|diagnosis)(?!.*(?:required|necessary))'
+    fix: "Query only necessary PHI fields. Implement data minimization principle"
+
+  HIPAA009:
+    name: "HIPAA: Missing De-identification"
+    description: "PHI for analytics should be de-identified"
+    severity: medium
+    category: security
+    hipaa: ["164.514(a)", "164.514(b)"]
+    patterns:
+      - '(?i)analytics.*patient(?!.*(?:deidentif|anonymiz|hash))'
+      - '(?i)report.*(?:ssn|dob|patient_name)'
+    fix: "De-identify PHI for analytics. Remove 18 HIPAA identifiers or use Safe Harbor method"
+
+  HIPAA010:
+    name: "HIPAA: Business Associate Agreement"
+    description: "Third-party PHI sharing requires BAA"
+    severity: high
+    category: security
+    hipaa: ["164.502(e)", "164.308(b)(1)"]
+    patterns:
+      - '(?i)(?:api|webhook|third[_-]?party).*(?:patient|medical|phi)(?!.*baa)'
+      - '(?i)send.*(?:patient|medical).*(?:vendor|partner)(?!.*agreement)'
+    fix: "Obtain signed Business Associate Agreement (BAA) before sharing PHI with vendors"

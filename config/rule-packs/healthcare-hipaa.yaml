@@ -1,0 +1,116 @@
+# Healthcare Rule Pack
+# HIPAA Compliance Rules for Protected Health Information
+
+name: "Healthcare (HIPAA)"
+description: "HIPAA Security Rule compliance for PHI protection"
+version: "1.0.0"
+compliance_framework: "HIPAA Security Rule"
+enabled: true
+
+rules:
+  HIPAA001:
+    name: "HIPAA: PHI in Logs"
+    description: "Protected Health Information must not be logged"
+    severity: critical
+    category: security
+    hipaa: ["164.312(b)"]
+    patterns:
+      - '(?i)(?:print|log|console|logger)\s*\([^)]*(?:patient|diagnosis|medical|health|ssn)'
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:dob|date_of_birth|birth_date)'
+      - '(?i)(?:print|log|console)\s*\([^)]*(?:mrn|medical_record)'
+    fix: "Never log PHI. Use tokenization or de-identification"
+    references:
+      - "https://www.hhs.gov/hipaa/for-professionals/security/index.html"
+
+  HIPAA002:
+    name: "HIPAA: Unencrypted PHI Storage"
+    description: "PHI must be encrypted at rest"
+    severity: critical
+    category: security
+    hipaa: ["164.312(a)(2)(iv)"]
+    patterns:
+      - '(?i)(?:save|write|store|insert).*(?:patient|diagnosis|medical)[^)]*\)(?!.*encrypt)'
+      - '(?i)open\s*\([^)]*(?:patient|medical|health)'
+    fix: "Encrypt all PHI at rest using AES-256"
+
+  HIPAA003:
+    name: "HIPAA: PHI in URLs"
+    description: "PHI must not be in URL parameters"
+    severity: high
+    category: security
+    hipaa: ["164.312(e)(1)"]
+    patterns:
+      - '(?i)\?.*(?:patient|ssn|diagnosis|medical)='
+      - '(?i)url.*\+.*(?:patient|ssn|medical)'
+    fix: "Use POST body or encrypted parameters for PHI"
+
+  HIPAA004:
+    name: "HIPAA: Missing Access Control"
+    description: "PHI access must be authenticated"
+    severity: high
+    category: security
+    hipaa: ["164.312(d)"]
+    patterns:
+      - '(?i)def\s+(?:get|fetch|retrieve)_patient\s*\([^)]*\)(?!.*(?:auth|token|verify))'
+    fix: "Implement authentication and authorization for PHI access"
+
+  HIPAA005:
+    name: "HIPAA: Audit Logging Required"
+    description: "PHI access must be logged"
+    severity: medium
+    category: security
+    hipaa: ["164.312(b)"]
+    patterns:
+      - '(?i)(?:patient|medical|health).*(?:read|write|update|delete)(?!.*(?:audit|log))'
+    fix: "Log all PHI access with user, timestamp, and action"
+
+  HIPAA006:
+    name: "HIPAA: PHI in Error Messages"
+    description: "Error messages must not expose PHI"
+    severity: high
+    category: security
+    hipaa: ["164.312(e)(2)"]
+    patterns:
+      - '(?i)(?:raise|throw|error).*(?:patient|ssn|diagnosis)'
+    fix: "Sanitize error messages to remove PHI"
+
+  HIPAA007:
+    name: "HIPAA: Transmission Security"
+    description: "PHI in transit must be encrypted"
+    severity: critical
+    category: security
+    hipaa: ["164.312(e)(1)"]
+    patterns:
+      - 'http://(?!localhost).*(?:patient|medical|health|phi)'
+    fix: "Use HTTPS/TLS for all PHI transmission"
+
+  HIPAA008:
+    name: "HIPAA: Minimum Necessary"
+    description: "Query only necessary PHI fields"
+    severity: medium
+    category: security
+    hipaa: ["164.502(b)"]
+    patterns:
+      - '(?i)SELECT\s+\*\s+FROM\s+(?:patient|medical|health)'
+    fix: "Select only required PHI fields, not SELECT *"
+
+  HIPAA009:
+    name: "HIPAA: Automatic Logoff"
+    description: "Automatic logoff after inactivity"
+    severity: medium
+    category: security
+    hipaa: ["164.312(a)(2)(iii)"]
+    patterns:
+      - '(?i)session.*(?:timeout|expire).*(?:3600|7200|86400)'
+    fix: "Set session timeout to 15 minutes for PHI systems"
+
+  HIPAA010:
+    name: "HIPAA: Unique User IDs"
+    description: "Each user must have unique identifier"
+    severity: high
+    category: security
+    hipaa: ["164.312(a)(2)(i)"]
+    patterns:
+      - '(?i)(?:shared|generic).*(?:user|account|login)'
+      - '(?i)(?:user|username)\s*[=:]\s*["\'](?:admin|shared|generic)["\']'
+    fix: "Assign unique user IDs, prohibit shared accounts"

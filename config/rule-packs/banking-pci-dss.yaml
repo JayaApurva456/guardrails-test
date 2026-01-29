@@ -1,0 +1,96 @@
+# Banking & Financial Services Rule Pack
+# PCI-DSS Compliance Rules
+
+name: "Banking & Financial Services"
+description: "PCI-DSS compliance rules for payment card industry"
+version: "1.0.0"
+compliance_framework: "PCI-DSS v4.0"
+enabled: true
+
+rules:
+  BANK001:
+    name: "PCI: Card Data in Logs"
+    description: "Credit card numbers (PAN) must not appear in logs"
+    severity: critical
+    category: security
+    cwe: "CWE-532"
+    pci_dss: ["3.3", "3.4"]
+    patterns:
+      - '(?i)(?:print|log|console|logger)\s*\([^)]*(?:card|credit|pan|ccn)'
+      - '(?i)(?:print|log|console)\s*\([^)]*\d{13,19}'
+    fix: "Mask card numbers. Only log last 4 digits: ****-****-****-1234"
+    references:
+      - "https://www.pcisecuritystandards.org/document_library"
+
+  BANK002:
+    name: "PCI: Weak Encryption"
+    description: "Financial data must use AES-256 minimum"
+    severity: critical
+    category: security
+    cwe: "CWE-327"
+    pci_dss: ["3.5", "3.6"]
+    patterns:
+      - '(?i)(?:DES|3DES|RC4|Blowfish|RC2)'
+      - '(?i)AES.*(?:128|192)(?!.*256)'
+    fix: "Use AES-256-GCM for encrypting financial data"
+
+  BANK003:
+    name: "PCI: CVV Storage"
+    description: "CVV/CVC must never be stored after authorization"
+    severity: critical
+    category: security
+    pci_dss: ["3.2"]
+    patterns:
+      - '(?i)(?:cvv|cvc|cvv2|cid)\s*[=:]\s*'
+      - '(?i)(?:save|store|persist|write).*(?:cvv|cvc)'
+    fix: "Never store CVV. Use tokenization for recurring payments"
+
+  BANK004:
+    name: "PCI: Unencrypted Transmission"
+    description: "Card data must be encrypted in transit"
+    severity: critical
+    category: security
+    pci_dss: ["4.1"]
+    patterns:
+      - 'http://(?!localhost|127\.0\.0\.1).*(?:payment|card|credit)'
+    fix: "Use HTTPS/TLS 1.2+ for all payment data transmission"
+
+  BANK005:
+    name: "PCI: Hardcoded Keys"
+    description: "Encryption keys must not be hardcoded"
+    severity: critical
+    category: security
+    pci_dss: ["3.5.2"]
+    patterns:
+      - '(?i)(?:encryption_key|aes_key|crypto_key)\s*[=:]\s*["\'][^"\']{16,}["\']'
+    fix: "Use HSM or key management service"
+
+  BANK006:
+    name: "PCI: Missing Input Validation"
+    description: "All payment inputs must be validated"
+    severity: high
+    category: security
+    pci_dss: ["6.5"]
+    patterns:
+      - '(?i)request\.(?:body|params|query)\.(?:card|pan|amount)(?!\s*\.\s*validate)'
+    fix: "Validate all payment-related inputs against expected formats"
+
+  BANK007:
+    name: "PCI: Insufficient Logging"
+    description: "Payment transactions must be logged"
+    severity: medium
+    category: security
+    pci_dss: ["10.1", "10.2"]
+    patterns:
+      - '(?i)(?:payment|transaction|charge).*(?:process|execute)(?!.*log)'
+    fix: "Log all payment transactions with timestamp and user ID"
+
+  BANK008:
+    name: "PCI: Missing Access Control"
+    description: "Cardholder data requires role-based access"
+    severity: high
+    category: security
+    pci_dss: ["7.1", "7.2"]
+    patterns:
+      - '(?i)def\s+(?:get|fetch)_card.*\([^)]*\)(?!.*(?:auth|role|permission))'
+    fix: "Implement role-based access control for cardholder data"

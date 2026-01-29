@@ -1,0 +1,129 @@
+# Banking & Financial Services Rule Pack
+# PCI-DSS Compliance Rules
+
+name: "Banking & Financial Services"
+description: "PCI-DSS compliance rules for payment card industry"
+version: "1.0.0"
+compliance_framework: "PCI-DSS v4.0"
+enabled: true
+
+rules:
+  BANK001:
+    name: "PCI: Card Data in Logs"
+    description: "Credit card numbers (PAN) must not appear in logs"
+    severity: critical
+    category: security
+    cwe: "CWE-532"
+    pci_dss: ["3.3", "3.4"]
+    patterns:
+      - '(?i)(?:print|log|console|logger)\s*\([^)]*(?:card|credit|pan|ccn)'
+      - '(?i)(?:print|log|console)\s*\([^)]*\d{13,19}'
+      - '(?i)log.*(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})'
+    fix: "Mask card numbers. Only log last 4 digits: ****-****-****-1234"
+    references:
+      - "https://www.pcisecuritystandards.org/document_library"
+
+  BANK002:
+    name: "PCI: Weak Encryption"
+    description: "Financial data must use AES-256 minimum"
+    severity: critical
+    category: security
+    cwe: "CWE-327"
+    pci_dss: ["3.5", "3.6"]
+    patterns:
+      - '(?i)(?:DES|3DES|RC4|Blowfish|RC2)(?!.*deprecated)'
+      - '(?i)AES.*(?:128|192)(?!.*256)'
+      - '(?i)cipher.*mode.*(?:ECB)'
+    fix: "Use AES-256-GCM for encrypting financial data"
+
+  BANK003:
+    name: "PCI: CVV Storage"
+    description: "CVV/CVC must never be stored after authorization"
+    severity: critical
+    category: security
+    cwe: "CWE-359"
+    pci_dss: ["3.2"]
+    patterns:
+      - '(?i)(?:cvv|cvc|cvv2|cid|csc)\s*[=:]\s*'
+      - '(?i)(?:save|store|persist|write|insert).*(?:cvv|cvc)'
+      - '(?i)db\.(?:save|insert|update).*cvv'
+    fix: "Never store CVV. Use tokenization for recurring payments"
+
+  BANK004:
+    name: "PCI: Unencrypted Transmission"
+    description: "Card data must be encrypted in transit"
+    severity: critical
+    category: security
+    cwe: "CWE-319"
+    pci_dss: ["4.1", "4.2"]
+    patterns:
+      - 'http://(?!localhost|127\.0\.0\.1).*(?:payment|card|credit|checkout)'
+      - '(?i)url\s*=\s*["\']http://.*(?:pay|card)'
+    fix: "Use HTTPS/TLS 1.2+ for all payment data transmission"
+
+  BANK005:
+    name: "PCI: Hardcoded Keys"
+    description: "Encryption keys must not be hardcoded"
+    severity: critical
+    category: security
+    cwe: "CWE-798"
+    pci_dss: ["3.5.2", "3.6.1"]
+    patterns:
+      - '(?i)(?:encryption_key|aes_key|crypto_key|master_key)\s*[=:]\s*["\'][^"\']{16,}["\']'
+      - '(?i)KEY\s*=\s*["\'][0-9a-fA-F]{32,}["\']'
+    fix: "Use HSM or key management service (AWS KMS, Azure Key Vault)"
+
+  BANK006:
+    name: "PCI: Missing Input Validation"
+    description: "All payment inputs must be validated"
+    severity: high
+    category: security
+    cwe: "CWE-20"
+    pci_dss: ["6.5.1"]
+    patterns:
+      - '(?i)request\.(?:body|params|query)\.(?:card|pan|amount)(?!\s*\.\s*(?:validate|sanitize))'
+      - '(?i)(?:card_number|amount|cvv)\s*=\s*request'
+    fix: "Validate all payment-related inputs against expected formats (Luhn check for cards)"
+
+  BANK007:
+    name: "PCI: Missing Tokenization"
+    description: "Store tokens instead of actual card data"
+    severity: high
+    category: security
+    pci_dss: ["3.2.1"]
+    patterns:
+      - '(?i)db\.save.*(?:card_number|pan)(?!.*token)'
+      - '(?i)INSERT.*INTO.*(?:card|payment).*VALUES.*\d{13,19}'
+    fix: "Use payment gateway tokenization (Stripe, Braintree) instead of storing card data"
+
+  BANK008:
+    name: "PCI: Insecure Authentication"
+    description: "Payment endpoints require strong authentication"
+    severity: high
+    category: security
+    pci_dss: ["8.2", "8.3"]
+    patterns:
+      - '(?i)@app\.route.*(?:payment|checkout|billing)(?!.*(?:auth|login_required))'
+      - '(?i)def\s+(?:process_payment|charge_card)(?!.*@.*auth)'
+    fix: "Require authentication and authorization for all payment operations"
+
+  BANK009:
+    name: "PCI: Insufficient Logging"
+    description: "Payment activities must be logged"
+    severity: medium
+    category: security
+    pci_dss: ["10.1", "10.2"]
+    patterns:
+      - '(?i)(?:charge|refund|capture).*(?!log|audit)'
+      - '(?i)payment_.*(?:success|failed)(?!.*log)'
+    fix: "Log all payment transactions with timestamp, user, amount, and result"
+
+  BANK010:
+    name: "PCI: Missing Data Retention Policy"
+    description: "Card data retention must be limited"
+    severity: medium
+    category: security
+    pci_dss: ["3.1"]
+    patterns:
+      - '(?i)(?:retention|ttl|expire).*card.*(?:365|730|999)'
+    fix: "Implement data retention policy. Delete card data after business need expires"

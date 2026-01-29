@@ -1,0 +1,35 @@
+services:
+  # Backend API Service - Complete Guardrails Engine
+  - type: web
+    name: guardrails-ultimate-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        value: AIzaSyCWDopZRqZbXT-pkQLFvJhrOWJSssUlTf4
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /health
+
+  # GitHub App Service - PR Integration
+  - type: web
+    name: guardrails-github-app
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: cd github-app && npm install && npm run build
+    startCommand: cd github-app && npm start
+    envVars:
+      - key: BACKEND_URL
+        value: https://guardrails-ultimate-backend.onrender.com
+      - key: APP_ID
+        sync: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: PRIVATE_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: 18.0.0

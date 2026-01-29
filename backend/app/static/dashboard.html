@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Guardrails - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 14px;
+            color: #48bb78;
+        }
+
+        .stat-change.negative {
+            color: #f56565;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .chart-card h2 {
+            color: #2d3748;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .violations-table {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .violations-table h2 {
+            color: #2d3748;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f7fafc;
+            color: #4a5568;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-critical {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .severity-high {
+            background: #feebc8;
+            color: #c05621;
+        }
+
+        .severity-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .severity-low {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .refresh-btn:hover {
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ GitHub Guardrails Dashboard</h1>
+            <p>Enterprise Security & Compliance Monitoring</p>
+        </div>
+
+        <div id="loading" class="loading">Loading dashboard data...</div>
+
+        <div id="dashboard" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Scans</div>
+                    <div class="stat-value" id="totalScans">0</div>
+                    <div class="stat-change">+12% this week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Violations Found</div>
+                    <div class="stat-value" id="totalViolations">0</div>
+                    <div class="stat-change negative">-8% from last week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Critical Issues</div>
+                    <div class="stat-value" id="criticalCount">0</div>
+                    <div class="stat-change negative">-15% improvement</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Response Time</div>
+                    <div class="stat-value" id="avgTime">0.0s</div>
+                    <div class="stat-change">42% faster</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h2>Violations by Severity</h2>
+                    <canvas id="severityChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h2>Detection Sources</h2>
+                    <canvas id="sourcesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h2>Violations Over Time</h2>
+                    <canvas id="trendChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h2>Copilot vs Human Code</h2>
+                    <canvas id="copilotChart"></canvas>
+                </div>
+            </div>
+
+            <div class="violations-table">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Recent Violations</h2>
+                    <button class="refresh-btn" onclick="loadDashboard()">Refresh Data</button>
+                </div>
+                <table id="violationsTable">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>File</th>
+                            <th>Line</th>
+                            <th>Source</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violationsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data (in production, this would come from API)
+        const dashboardData = {
+            stats: {
+                totalScans: 1247,
+                totalViolations: 3891,
+                criticalCount: 287,
+                avgTime: 0.23
+            },
+            severityDistribution: {
+                critical: 287,
+                high: 894,
+                medium: 1523,
+                low: 1187
+            },
+            sourceDistribution: {
+                'pattern-matcher': 1245,
+                'secrets-detector': 567,
+                'license-scanner': 234,
+                'duplication-detector': 456,
+                'coding-standards': 789,
+                'ai-analyzer': 600
+            },
+            weeklyTrend: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                data: [450, 520, 380, 620, 580, 340, 220]
+            },
+            copilotVsHuman: {
+                copilot: 1567,
+                human: 2324
+            },
+            recentViolations: [
+                { type: 'hardcoded-api-key', severity: 'critical', file: 'auth.py', line: 45, source: 'secrets-detector', time: '2 mins ago' },
+                { type: 'sql-injection', severity: 'high', file: 'database.py', line: 128, source: 'pattern-matcher', time: '5 mins ago' },
+                { type: 'duplicate-code', severity: 'medium', file: 'utils.py', line: 67, source: 'duplication-detector', time: '8 mins ago' },
+                { type: 'naming-convention', severity: 'low', file: 'helpers.py', line: 23, source: 'coding-standards', time: '12 mins ago' },
+                { type: 'weak-crypto', severity: 'high', file: 'encryption.py', line: 91, source: 'pattern-matcher', time: '15 mins ago' }
+            ]
+        };
+
+        function loadDashboard() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+
+            // Simulate API call
+            setTimeout(() => {
+                renderDashboard();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+            }, 500);
+        }
+
+        function renderDashboard() {
+            // Update stats
+            document.getElementById('totalScans').textContent = dashboardData.stats.totalScans.toLocaleString();
+            document.getElementById('totalViolations').textContent = dashboardData.stats.totalViolations.toLocaleString();
+            document.getElementById('criticalCount').textContent = dashboardData.stats.criticalCount.toLocaleString();
+            document.getElementById('avgTime').textContent = dashboardData.stats.avgTime.toFixed(2) + 's';
+
+            // Render charts
+            renderSeverityChart();
+            renderSourcesChart();
+            renderTrendChart();
+            renderCopilotChart();
+
+            // Render table
+            renderViolationsTable();
+        }
+
+        function renderSeverityChart() {
+            const ctx = document.getElementById('severityChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low'],
+                    datasets: [{
+                        data: [
+                            dashboardData.severityDistribution.critical,
+                            dashboardData.severityDistribution.high,
+                            dashboardData.severityDistribution.medium,
+                            dashboardData.severityDistribution.low
+                        ],
+                        backgroundColor: ['#f56565', '#ed8936', '#ecc94b', '#48bb78']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderSourcesChart() {
+            const ctx = document.getElementById('sourcesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(dashboardData.sourceDistribution),
+                    datasets: [{
+                        label: 'Violations',
+                        data: Object.values(dashboardData.sourceDistribution),
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dashboardData.weeklyTrend.labels,
+                    datasets: [{
+                        label: 'Violations',
+                        data: dashboardData.weeklyTrend.data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderCopilotChart() {
+            const ctx = document.getElementById('copilotChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['AI-Generated (Copilot)', 'Human-Written'],
+                    datasets: [{
+                        data: [
+                            dashboardData.copilotVsHuman.copilot,
+                            dashboardData.copilotVsHuman.human
+                        ],
+                        backgroundColor: ['#9f7aea', '#4299e1']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderViolationsTable() {
+            const tbody = document.getElementById('violationsBody');
+            tbody.innerHTML = '';
+
+            dashboardData.recentViolations.forEach(violation => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${violation.type}</td>
+                    <td><span class="severity-badge severity-${violation.severity}">${violation.severity}</span></td>
+                    <td>${violation.file}</td>
+                    <td>${violation.line}</td>
+                    <td>${violation.source}</td>
+                    <td>${violation.time}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load dashboard on page load
+        loadDashboard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+# Government Rule Pack
+# FedRAMP/FISMA Compliance Rules
+
+name: "Government (FedRAMP)"
+description: "Federal security requirements for FedRAMP/FISMA compliance"
+version: "1.0.0"
+compliance_framework: "FedRAMP Moderate / NIST 800-53"
+enabled: true
+
+rules:
+  GOV001:
+    name: "FedRAMP: FIPS Cryptography"
+    description: "Must use FIPS 140-2 validated crypto"
+    severity: high
+    category: security
+    nist: ["SC-13"]
+    patterns:
+      - '(?i)(?:MD5|SHA1|DES|RC4|Blowfish)'
+      - '(?i)hashlib\.(?:md5|sha1)\s*\('
+    fix: "Use FIPS-validated: SHA-256, AES-256, RSA-2048+"
+    references:
+      - "https://csrc.nist.gov/publications/detail/fips/140/2/final"
+
+  GOV002:
+    name: "FedRAMP: Session Timeout"
+    description: "Sessions must timeout after 15 minutes"
+    severity: medium
+    category: security
+    nist: ["AC-11", "AC-12"]
+    patterns:
+      - '(?i)session.*(?:timeout|expire).*(?:3600|7200|86400)'
+      - '(?i)(?:timeout|expire).*[=:]\s*(?:[3-9]\d{3}|\d{5,})'
+    fix: "Set session timeout to 900 seconds (15 min) maximum"
+
+  GOV003:
+    name: "FedRAMP: Password Policy"
+    description: "Passwords must meet complexity requirements"
+    severity: medium
+    category: security
+    nist: ["IA-5"]
+    patterns:
+      - '(?i)password.*min.*length.*[1-7](?!\d)'
+      - '(?i)(?:minlength|min_length).*[=:]\s*[1-7](?!\d)'
+    fix: "Require minimum 12 characters with complexity"
+
+  GOV004:
+    name: "FedRAMP: Audit Logging"
+    description: "Security events must be logged"
+    severity: medium
+    category: security
+    nist: ["AU-2", "AU-3"]
+    patterns:
+      - '(?i)(?:login|logout|auth)(?!.*(?:log|audit))'
+    fix: "Log all authentication events"
+
+  GOV005:
+    name: "FedRAMP: TLS Version"
+    description: "Must use TLS 1.2 or higher"
+    severity: high
+    category: security
+    nist: ["SC-8"]
+    patterns:
+      - '(?i)ssl.*version.*[12]\.'
+      - '(?i)tls.*1\.[01]'
+      - '(?i)SSLv[23]'
+    fix: "Use TLS 1.2 minimum, prefer TLS 1.3"
+
+  GOV006:
+    name: "FedRAMP: Multi-Factor Auth"
+    description: "Privileged access requires MFA"
+    severity: high
+    category: security
+    nist: ["IA-2"]
+    patterns:
+      - '(?i)admin.*login(?!.*(?:mfa|2fa|totp))'
+      - '(?i)privileged.*access(?!.*(?:mfa|2fa))'
+    fix: "Implement MFA for all privileged access"
+
+  GOV007:
+    name: "FedRAMP: Data at Rest Encryption"
+    description: "All data at rest must be encrypted"
+    severity: high
+    category: security
+    nist: ["SC-28"]
+    patterns:
+      - '(?i)(?:save|write|store).*sensitive(?!.*encrypt)'
+      - '(?i)db\.(?:insert|update)(?!.*encrypt)'
+    fix: "Encrypt sensitive data before storing"
+
+  GOV008:
+    name: "FedRAMP: Least Privilege"
+    description: "Applications must run with least privilege"
+    severity: medium
+    category: security
+    nist: ["AC-6"]
+    patterns:
+      - '(?i)(?:sudo|root|admin).*(?:execute|run|call)'
+      - 'os\.setuid\s*\(\s*0\s*\)'
+    fix: "Run with minimal required privileges"
+
+  GOV009:
+    name: "FedRAMP: Security Headers"
+    description: "HTTP security headers required"
+    severity: medium
+    category: security
+    nist: ["SC-7"]
+    patterns:
+      - '(?i)response\.headers(?!.*(?:x-frame-options|content-security|strict-transport))'
+    fix: "Set X-Frame-Options, CSP, HSTS headers"
+
+  GOV010:
+    name: "FedRAMP: Input Sanitization"
+    description: "All inputs must be sanitized"
+    severity: high
+    category: security
+    nist: ["SI-10"]
+    patterns:
+      - '(?i)request\.(?:body|params|query)\.(?!.*(?:sanitize|validate|clean))'
+    fix: "Validate and sanitize all user inputs"
