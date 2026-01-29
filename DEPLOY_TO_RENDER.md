@@ -70,4 +70,4 @@ Bot should comment within 30 seconds!
 
 ---
 
-**That's it! Your solution is live!** 🎉
+**That's it! Your solution is live!** 

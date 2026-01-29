@@ -11,12 +11,12 @@ fi
 
 RENDER_URL=$1
 
-echo "🧪 Testing Render Deployment: $RENDER_URL"
+echo " Testing Render Deployment: $RENDER_URL"
 echo "=================================================="
 
 # Test 1: Health Check
 echo ""
-echo "1️⃣ Testing Health Endpoint..."
+echo "1️ Testing Health Endpoint..."
 HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" "$RENDER_URL/health")
 HTTP_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
 BODY=$(echo "$HEALTH_RESPONSE" | head -n-1)
@@ -31,10 +31,10 @@ fi
 
 # Test 2: API Documentation
 echo ""
-echo "2️⃣ Testing API Documentation..."
+echo "2️ Testing API Documentation..."
 DOCS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$RENDER_URL/docs")
 if [ "$DOCS_CODE" = "200" ]; then
-    echo "✅ API docs accessible!"
+    echo " API docs accessible!"
     echo "   URL: $RENDER_URL/docs"
 else
     echo "⚠️  API docs not accessible (HTTP $DOCS_CODE)"
@@ -42,7 +42,7 @@ fi
 
 # Test 3: Analyze Endpoint
 echo ""
-echo "3️⃣ Testing Analysis Endpoint..."
+echo "3️ Testing Analysis Endpoint..."
 ANALYSIS_RESPONSE=$(curl -s -X POST "$RENDER_URL/api/analyze/file" \
     -H "Content-Type: application/json" \
     -d '{
